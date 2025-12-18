@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'move_cobot=ramen_chef.move_basic:main'
-        ],
-    },
+            'move_cobot = ramen_chef.move_basic:main'
+            ],
+        },
 )

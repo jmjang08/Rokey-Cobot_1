@@ -94,12 +94,12 @@ def generate_launch_description():
     )
     
     move_basic_node = Node(
-    package="dsr_bringup2",
-    executable="move_basic",
-    namespace=LaunchConfiguration('name'),
-    output="screen"
-    )
-    
+        package="ramen_chef",
+        executable="move_cobot",
+        namespace=LaunchConfiguration('name'),
+        output="screen"
+        )
+
     run_emulator_node = Node(
         package="dsr_bringup2",
         executable="run_emulator",
@@ -193,14 +193,6 @@ def generate_launch_description():
         executable="spawner",
         arguments=["dsr_controller2", "-c", "controller_manager"],
     )
-    
-    # joint_trajectory_controller_spawner = Node(
-    #     package="controller_manager",
-    #     # namespace=LaunchConfiguration('name'),
-    #     executable="spawner",
-    #     arguments=["dsr_joint_trajectory", "-c", "dsr/controller_manager", "-n", "dsr"],
-    # )
-
 
     # Delay rviz start after `joint_state_broadcaster`
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
