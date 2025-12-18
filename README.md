@@ -1,4 +1,5 @@
 # Ramen Chef (ROS2 + Flask Recovery UI)
+Rokey BootCamp Cobot-1st projects, 2025.11.24~2025.12.05
 
 This project combines a **ROS2 (Humble) robot motion package** with a **Flask + Socket.IO web-based recovery/control UI**.
 
