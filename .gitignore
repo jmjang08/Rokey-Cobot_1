@@ -1,0 +1,53 @@
+############################
+# ROS2 / colcon workspace
+############################
+
+# build outputs
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# colcon/ament
+.colcon*
+.ament*
+CTestTestfile.cmake
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+############################
+# Python 관련
+############################
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyd
+*.pdb
+*.egg-info/
+.eggs/
+.python-version
+
+############################
+# IDE / OS-specific
+############################
+
+# VSCode
+.vscode/
+
+# Mac / Windows
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 기타
+*.swp
+*.swo
+*.log
+*.tmp
+*.bak
