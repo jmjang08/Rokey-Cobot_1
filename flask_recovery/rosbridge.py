@@ -1,21 +1,31 @@
 from rclpy.node import Node
 from std_msgs.msg import Bool, Int32
 
+# Robot Namespace Configuration
 ROBOT_ID = "dsr01"
 
+
 class RosBridge(Node):
+    """
+    Bridge node that connects Web (Socket.io) and ROS 2.
+    Translates web signals into ROS 2 topics and vice-versa.
+    """
     def __init__(self):
         super().__init__("ros_web_bridge", namespace=ROBOT_ID)
 
         self.socketio = None
 
-        # 웹 → ROS 퍼블리셔
+        # ==========================================
+        # Web -> ROS 2 (Publishers)
+        # ==========================================
         self.start_pub = self.create_publisher(Bool, "/start_signal", 10)
         self.mode_pub  = self.create_publisher(Int32, "/mode_select", 10)
         self.stop_pub  = self.create_publisher(Bool, "/stop_signal", 10)
-        self.recovery_pub = self.create_publisher(Bool, "/recovery_signal", 10) # Recovery 퍼블리셔 정의
+        self.recovery_pub = self.create_publisher(Bool, "/recovery_signal", 10)
         
-        # ROS → 웹 구독자
+        # ==========================================
+        # ROS 2 -> Web (Subscribers)
+        # ==========================================
         self.create_subscription(
             Int32,
             "/progress_state",
@@ -23,43 +33,63 @@ class RosBridge(Node):
             10
         )
 
-        print("RosBridge Ready.")
+        self.get_logger().info("RosBridge Node Initialized and Ready.")
 
-    # START publish
+    # ------------------------------------------
+    # Publish Methods (Called by Flask-SocketIO)
+    # ------------------------------------------
+
     def publish_start(self, flag: bool):
+        """Publishes the start signal to ROS 2."""
         msg = Bool()
         msg.data = flag
         self.start_pub.publish(msg)
-        self.get_logger().info("Publish /start_signal TRUE")
+        self.get_logger().info("Published: /start_signal (True)")
 
-    # MODE publish
     def publish_mode(self, mode: int):
+        """Publishes the selected cooking mode to ROS 2."""
         msg = Int32()
         msg.data = mode
         self.mode_pub.publish(msg)
-        self.get_logger().info(f"Publish /mode_select {mode}")
+        self.get_logger().info(f"Published: /mode_select ({mode})")
 
-    # ⭐ STOP publish
     def publish_stop(self):
+        """Publishes the stop (emergency) signal to ROS 2."""
         msg = Bool()
-        msg.data = True # STOP은 항상 True 발행
+        msg.data = True 
         self.stop_pub.publish(msg)
-        self.get_logger().info("Publish /stop_signal TRUE")
+        self.get_logger().info("Published: /stop_signal (True)")
 
-    # 🛑 RECOVERY publish 함수 추가 🛑
     def publish_recovery(self):
+        """Publishes the recovery signal to reset the ROS 2 state machine."""
         msg = Bool()
-        msg.data = True # RECOVERY는 항상 True 발행
+        msg.data = True 
         self.recovery_pub.publish(msg)
-        self.get_logger().info("--- PUBLISHED: /recovery_signal TRUE ---")
+        self.get_logger().info("Published: /recovery_signal (True)")
 
-    # ROS → Web emit
-    def cb_progress(self, msg: Int32):
-        state = msg.data
-        print(f"[ROS] /progress_state = {state}")
+    # ------------------------------------------
+    # Callback Methods (ROS 2 -> Web)
+    # ------------------------------------------
 
-        if self.socketio:
-            self.socketio.emit("progress_update", {"state": state})
-            print(f"[ROS → Web] progress_update {state}")
-        else:
-            print("⚠ socketio not connected")
+    def cb_progress(self, msg):
+        """
+        Receives progress state from ROS 2 
+        and sends it to the web dashboard via Socket.io.
+        """
+        if self.socketio is not None:
+            # Mapping state integer to human-readable text
+            status_map = {
+                0: "Waiting for Order",
+                1: "Moving to Kitchen",
+                2: "Cooking in Progress",
+                3: "Delivering Food",
+                4: "Mission Completed",
+                9: "Emergency Stopped"
+            }
+            status_text = status_map.get(msg.data, "Unknown State")
+            
+            self.socketio.emit("progress_update", {
+                "step": msg.data,
+                "text": status_text
+            })
+            self.get_logger().info(f"Forwarded to Web: State {msg.data} ({status_text})")

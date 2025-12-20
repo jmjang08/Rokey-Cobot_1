@@ -1,5 +1,4 @@
 import time
-
 import rclpy
 import DR_init
 from std_msgs.msg import Int32, Bool
@@ -21,7 +20,7 @@ DR_init.__dsr__id = ROBOT_ID
 DR_init.__dsr__model = ROBOT_MODEL
 
 
-# 현재 로봇 작업 상태를 토픽으로 송신
+# Publishes current robot task status to a topic
 def publish_state(num: int) -> None:
     """Publish progress state to /progress_state. Keeps track of last progress (except 7)."""
     global progress_pub, current_progress
@@ -42,28 +41,28 @@ def initialize_robot() -> None:
     set_tool(ROBOT_TCP)
     set_tcp(ROBOT_TOOL)
 
-# 그리퍼 열기
+# Open gripper
 def open_gripper(wait: float = 1.0) -> None:
     from DSR_ROBOT2 import set_digital_output
     set_digital_output(1, 0)
     set_digital_output(2, 1)
     time.sleep(wait)
 
-# 그리퍼 닫기
+# Close gripper
 def close_gripper(wait: float = 1.0) -> None:
     from DSR_ROBOT2 import set_digital_output
     set_digital_output(1, 1)
     set_digital_output(2, 1)
     time.sleep(wait)
 
-# 그리퍼 약하게 닫기, 물병의 지나친 찌그러짐 방지
+# Close gripper gently to prevent excessive crushing of the water bottle
 def water_close_gripper(wait: float = 1.0) -> None:
     from DSR_ROBOT2 import set_digital_output
     set_digital_output(1, 1)
     set_digital_output(2, 0)
     time.sleep(wait)
 
-# 로봇을 홈 위치로 이동
+# Move robot to home position
 def home_return(vel: int = VEL, acc: int = ACC) -> None:
     from DSR_ROBOT2 import movej
     movej([0, 0, 90, 0, 90, 0], vel=vel, acc=acc)
@@ -79,7 +78,7 @@ def end_motion() -> None:
     close_gripper()
     open_gripper()
 
-# 에러 발생 시 복구 동작 수행
+# Perform recovery motion in case of an error
 def recovery_motion() -> None:
     from DSR_ROBOT2 import movel, movej, posx, DR_BASE
 
@@ -125,7 +124,7 @@ def recovery_motion() -> None:
 
     print("Recovery motion done")
 
-# 전체 작업 시퀀스 메인 함수
+# Main function for the entire task sequence
 def perform_task(node, mode: int) -> None:
     from DSR_ROBOT2 import movej, movel, posx, DR_BASE, get_digital_input
 
@@ -241,7 +240,7 @@ def perform_task(node, mode: int) -> None:
             movej(J1, vel=60, acc=60)
             movej(J2, vel=60, acc=60)
 
-    # 컵을 사용해 스프를 붓는 동작
+    # Action of pouring soup/toppings using a cup
     def pour_with_cup(cup_grip, cup_case, cup_back, step_name: str) -> None:
         J_sauce_upper_pot = [39.23, -36.98, 125.59, -10.72, 49.46, -83.16]
         J_sauce_pour = [43.79, 26.84, 73.89, -21.61, 114.97, -111.39]
@@ -268,8 +267,8 @@ def perform_task(node, mode: int) -> None:
         movel(cup_back, vel=VEL, acc=ACC)
         home_return()
 
-    # 선택된 모드에 따라 스프, 토핑 붓기 시퀀스 실행
-    def pour_sauce() -> None:
+    # Execute soup and topping pouring sequence based on the selected mode
+    def pour_cup() -> None:
         publish_state(4)
         check_stop()
 
@@ -317,7 +316,7 @@ def perform_task(node, mode: int) -> None:
         dance(7)
         home_return()
 
-        pour_sauce()
+        pour_cup()
         home_return()
 
         open_gripper()
@@ -336,7 +335,7 @@ def perform_task(node, mode: int) -> None:
         home_return()
 
 
-# ROS 노드 초기화 및 실행
+# ROS node initialization and execution
 def main(args=None) -> None:
     global stop_requested, recovery_requested, progress_pub, end_received
 
@@ -450,7 +449,6 @@ def main(args=None) -> None:
                 continue
 
     rclpy.shutdown()
-
 
 if __name__ == "__main__":
     main()

@@ -1,185 +1,87 @@
-# 
-#  dsr_bringup2
-#  Author: Minsoo Song (minsoo.song@doosan.com)
-#  
+#  dsr_bringup2 by Minsoo Song (minsoo.song@doosan.com)
 #  Copyright (c) 2024 Doosan Robotics
-#  Use of this source code is governed by the BSD, see LICENSE
-# 
+# modified for Rokey project
 
 import os
-
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler,DeclareLaunchArgument, TimerAction, GroupAction
+from launch.actions import RegisterEventHandler, DeclareLaunchArgument, TimerAction, GroupAction
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration, PythonExpression
 from launch.conditions import IfCondition, UnlessCondition
-
 from launch_ros.actions import Node, SetRemap
 from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 from launch.actions import IncludeLaunchDescription
-
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import OpaqueFunction
 from dsr_bringup2.utils import read_update_rate, show_git_info
 import yaml
 
+
 def print_launch_configuration_value(context, *args, **kwargs):
-    # LaunchConfiguration 값을 평가합니다.
+    # Evaluate and print the 'gz' (Gazebo) LaunchConfiguration value
     gz_value = LaunchConfiguration('gz').perform(context)
-    # 평가된 값을 콘솔에 출력합니다.
     print(f'LaunchConfiguration gz: {gz_value}')
     return gz_value
 
 def generate_launch_description():
-    ARGUMENTS =[ 
-        DeclareLaunchArgument('name',  default_value = 'dsr01',     description = 'NAME_SPACE'     ),
-        DeclareLaunchArgument('host',  default_value = '127.0.0.1', description = 'ROBOT_IP'       ),
-        DeclareLaunchArgument('port',  default_value = '12345',     description = 'ROBOT_PORT'     ),
-        DeclareLaunchArgument('mode',  default_value = 'virtual',   description = 'OPERATION MODE' ),
-        DeclareLaunchArgument('model', default_value = 'm0609',     description = 'ROBOT_MODEL'    ),
-        DeclareLaunchArgument('color', default_value = 'white',     description = 'ROBOT_COLOR'    ),
-        DeclareLaunchArgument('gui',        default_value = 'false',     description = 'Start RViz2'    ),
-        DeclareLaunchArgument('gz',         default_value = 'false',     description = 'USE GAZEBO SIM'    ),
-        DeclareLaunchArgument('rt_host',    default_value = '192.168.137.50',     description = 'ROBOT_RT_IP'    ),
-        DeclareLaunchArgument('remap_tf',   default_value = 'false',     description = 'REMAP TF'    ),
+    # Define Launch Arguments
+    ARGUMENTS = [ 
+        DeclareLaunchArgument('name',      default_value='dsr01',    description='Robot name/namespace'),
+        DeclareLaunchArgument('model',     default_value='m0609',    description='Robot model (m0609, a0509, etc.)'),
+        DeclareLaunchArgument('color',     default_value='white',    description='Robot color'),
+        DeclareLaunchArgument('gripper',   default_value='none',     description='Gripper type'),
+        DeclareLaunchArgument('mobile',    default_value='none',     description='Mobile base type'),
+        DeclareLaunchArgument('remap_tf',  default_value='false',    description='Remap TF for multi-robot setups'),
+        DeclareLaunchArgument('rviz',      default_value='true',     description='Launch RViz'),
+        DeclareLaunchArgument('gz',        default_value='false',    description='Use Gazebo simulation'),
     ]
-    xacro_path = os.path.join( get_package_share_directory('dsr_description2'), 'xacro')
-    # gui = LaunchConfiguration("gui")
-    mode = LaunchConfiguration("mode")
-    
-    update_rate = str(read_update_rate()) # get update_rate from yaml
-    show_git_info() # print git info
-    
-    # Get URDF via xacro
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("dsr_description2"),
-                    "xacro",
-                    LaunchConfiguration('model'),
-                ]
-            ),
-            ".urdf.xacro",
-            " name:=", LaunchConfiguration('name'),
-            " host:=", LaunchConfiguration('host'),
-            " rt_host:=", LaunchConfiguration('rt_host'),
-            " port:=", LaunchConfiguration('port'),
-            " mode:=", LaunchConfiguration('mode'),
-            " model:=", LaunchConfiguration('model'),
-            " update_rate:=", update_rate,
-        ]
-    )
 
+    # Load Robot Description (URDF/Xacro)
+    robot_description_content = Command([
+        PathJoinSubstitution([FindExecutable(name="xacro")]), " ",
+        PathJoinSubstitution([FindPackageShare("dsr_description2"), "xacro", 
+                             PythonExpression(["'", LaunchConfiguration('model'), ".urdf.xacro'"])]), " ",
+        "name:=", LaunchConfiguration('name'), " ",
+        "model:=", LaunchConfiguration('model'), " ",
+        "color:=", LaunchConfiguration('color'), " ",
+        "gripper:=", LaunchConfiguration('gripper'), " ",
+        "mobile:=", LaunchConfiguration('mobile'), " ",
+    ])
     robot_description = {"robot_description": robot_description_content}
 
-    robot_controllers = [
-        PathJoinSubstitution([
-            FindPackageShare("dsr_controller2"),
-            "config",
-            "dsr_update_rate.yaml",
-        ]),
-        PathJoinSubstitution([
-            FindPackageShare("dsr_controller2"),
-            "config",
-            "dsr_controller2.yaml",
-        ])
-    ]
-
-    rviz_config_file = PathJoinSubstitution(
-        [FindPackageShare("dsr_description2"), "rviz", "default.rviz"]
-    )
-    
-    move_basic_node = Node(
-        package="ramen_chef",
-        executable="move_cobot",
+    # Node: Robot State Publisher
+    robot_state_pub_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
         namespace=LaunchConfiguration('name'),
-        output="screen"
-        )
+        output="both",
+        parameters=[robot_description],
+    )
 
+    # Node: Doosan Emulator (Simulates robot hardware)
     run_emulator_node = Node(
-        package="dsr_bringup2",
+        package="dsr_launcher2",
         executable="run_emulator",
         namespace=LaunchConfiguration('name'),
-        parameters=[
-            {"name":    LaunchConfiguration('name')  }, 
-            {"rate":    100         },
-            {"standby": 5000        },
-            {"command": True        },
-            {"host":    LaunchConfiguration('host')  },
-            {"port":    LaunchConfiguration('port')  },
-            {"mode":    LaunchConfiguration('mode')  },
-            {"model":   LaunchConfiguration('model') },
-            {"gripper": "none"      },
-            {"mobile":  "none"      },
-            {"rt_host":  LaunchConfiguration('rt_host')      },
-            #parameters_file_path       # 파라미터 설정을 동일이름으로 launch 파일과 yaml 파일에서 할 경우 yaml 파일로 셋팅된다.    
-        ],
-        condition=IfCondition(PythonExpression(["'", mode, "' == 'virtual'"])),
+        arguments=[LaunchConfiguration('model'), LaunchConfiguration('name')],
         output="screen",
     )
 
-    control_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
-        namespace=LaunchConfiguration('name'),
-        parameters=[robot_description] + robot_controllers,
-        output="both",
-    )
-
-    robot_state_pub_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        name='robot_state_publisher',
-        namespace=LaunchConfiguration('name'),
-        output='both',
-        parameters=[{
-            'robot_description': Command([
-                'xacro', ' ', xacro_path, '/', LaunchConfiguration('model'),
-                '.urdf.xacro color:=', LaunchConfiguration('color'),
-                " name:=", LaunchConfiguration('name'),
-                " host:=", LaunchConfiguration('host'),
-                " rt_host:=", LaunchConfiguration('rt_host'),
-                " port:=", LaunchConfiguration('port'),
-                " mode:=", LaunchConfiguration('mode'),
-                " model:=", LaunchConfiguration('model'),
-                " update_rate:=", update_rate,
-                ]),         
-        }]
-    )
-    
+    # Node: RViz Visualizer
+    rviz_config_file = PathJoinSubstitution([
+        FindPackageShare("dsr_description2"), "rviz", "default.rviz"
+    ])
     rviz_node = Node(
         package="rviz2",
         executable="rviz2",
-        namespace=LaunchConfiguration('name'),
         name="rviz2",
-        output="log",
+        output="screen",
         arguments=["-d", rviz_config_file],
-        # condition=IfCondition(gui),
+        condition=IfCondition(LaunchConfiguration('rviz')),
     )
 
-    original_tf_nodes = GroupAction(
-        actions=[
-            robot_state_pub_node,
-            rviz_node
-        ],
-        condition=UnlessCondition(LaunchConfiguration('remap_tf'))
-    )
-    
-
-    remapped_tf_nodes = GroupAction(
-        actions=[
-            SetRemap(src='/tf', dst='tf'),
-            SetRemap(src='/tf_static', dst='tf_static'),
-            robot_state_pub_node,
-            rviz_node
-        ],
-        condition=IfCondition(LaunchConfiguration('remap_tf'))
-    )
-
+    # Controller Spawner: Joint State Broadcaster
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         namespace=LaunchConfiguration('name'),
@@ -187,6 +89,7 @@ def generate_launch_description():
         arguments=["joint_state_broadcaster", "-c", "controller_manager"],
     )
 
+    # Controller Spawner: Doosan Robot Controller
     robot_controller_spawner = Node(
         package="controller_manager",
         namespace=LaunchConfiguration('name'),
@@ -194,31 +97,29 @@ def generate_launch_description():
         arguments=["dsr_controller2", "-c", "controller_manager"],
     )
 
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=robot_controller_spawner,
-            on_exit=[rviz_node],
-        )
-    )
-
-    # Delay start of robot_controller after `joint_state_broadcaster`
-    delay_robot_controller_spawner_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+    # Sequential Launch Handling (Event Handlers)
+    # Start Robot Controller after Joint State Broadcaster finishes
+    delay_robot_controller = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
             on_exit=[robot_controller_spawner],
         )
     )
+
+    # Start RViz after Robot Controller is ready
+    delay_rviz = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=robot_controller_spawner,
+            on_exit=[rviz_node],
+        )
+    )
     
     nodes = [
+        robot_state_pub_node,
         run_emulator_node,
-        original_tf_nodes,
-        remapped_tf_nodes,
-        robot_controller_spawner,
         joint_state_broadcaster_spawner,
-        control_node,
-        move_basic_node,
-
+        delay_robot_controller,
+        delay_rviz,
     ]
 
     return LaunchDescription(ARGUMENTS + nodes)

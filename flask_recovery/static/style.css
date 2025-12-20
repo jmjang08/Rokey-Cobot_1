@@ -1,4 +1,4 @@
-/* 전체 */
+/* Global Styles */
 body {
     font-family: 'Noto Sans KR', sans-serif;
     background-color: #f4f6f9; 
@@ -9,7 +9,7 @@ body {
     overflow-x: hidden;
 }
 
-/* 양옆 라면 패턴 */
+/* Background patterns on both sides (Ramen decoration) */
 body::before,
 body::after {
     content: "";
@@ -33,7 +33,7 @@ body::after {
     right: 0;
 }
 
-/* HERO 라면 이미지 */
+/* HERO Section - Ramen Main Image */
 .hero {
     position: relative;
     padding-top: 40px;
@@ -45,60 +45,50 @@ body::after {
     filter: drop-shadow(0px 8px 18px rgba(0,0,0,0.15));
 }
 
+/* Control Buttons (STOP, RECOVERY, START) */
 .stop-btn {
     width: 100%;
-    padding: 14px;
-    background: #ff4b4b;
-    color: white;
+    background: #ff4d4f;
+    color: #fff;
+    padding: 15px;
     border-radius: 12px;
     border: none;
     font-size: 20px;
     font-weight: bold;
     cursor: pointer;
-    margin-top: 10px;
+    box-shadow: 0 4px 14px rgba(255, 77, 79, 0.4);
     transition: 0.2s;
 }
 
-.stop-btn:hover {
-    background: #ff1f1f;
-}
-
 .stop-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.95);
 }
 
-.steam {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    width: 140px;
-    opacity: 0.6;
-    transform: translateX(-50%);
+.recovery-btn {
+    width: 100%;
+    background: #52c41a;
+    color: #fff;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(82, 196, 26, 0.4);
+    transition: 0.2s;
 }
 
-.hero-title {
-    margin-top: 10px;
-    font-size: 28px;
-    font-weight: 600;
+.recovery-btn:active {
+    transform: scale(0.95);
 }
 
-/* 카드 스타일 */
-.card {
-    background: #fafafa;
-    width: 360px;
-    margin: 20px auto;
-    padding: 25px;
-    border-radius: 18px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-}
-
-/* START */
 .start-btn {
     width: 100%;
-    padding: 14px;
-    background: rgba(255,255,255,0.35);
-    backdrop-filter: blur(10px);
+    padding: 15px;
+    margin-top: 20px;
     border-radius: 12px;
+    background: rgba(255,255,255,0.35);
+    backdrop-filter: blur(8px);
     border: 1px solid #d0d0d0;
     font-size: 20px;
     font-weight: bold;
@@ -115,7 +105,7 @@ body::after {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) inset;
 }
 
-/* 고명 버튼 */
+/* Option/Mode Buttons (Garnish Selection) */
 .mode-btn {
     width: 140px;
     padding: 12px;
@@ -134,46 +124,4 @@ body::after {
     border-color: #f0c933;
     transform: scale(1.07);
     box-shadow: 0 6px 14px rgba(255,215,0,0.45);
-}
-
-/* 상태 */
-.status-card {
-    margin-bottom: 60px;
-}
-
-.status-text {
-    font-size: 22px;
-    margin-bottom: 10px;
-}
-
-.timer {
-    font-size: 3.5em; 
-    font-weight: 700;
-    color: #E74C3C;
-    margin-top: 5px;
-}
-
-/* 🛑 RECOVERY 버튼 스타일 */
-.recovery-btn {
-    width: 100%; 
-    padding: 14px;
-    background: #4CAF50;
-    color: white;
-    border-radius: 12px;
-    border: none;
-    font-size: 20px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 4px 14px rgba(76, 175, 80, 0.4);
-}
-
-.recovery-btn:hover {
-    background: #45A049;
-}
-
-/* Recovery 버튼을 클릭했을 때 (꾹 눌릴 때) 효과 */
-.recovery-btn:active {
-    transform: scale(0.98);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) inset;
 }

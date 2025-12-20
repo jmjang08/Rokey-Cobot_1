@@ -1,14 +1,14 @@
 const socket = io();
 
-// 선택 상태
+// Selection states
 let eggSelected = false;
 let greenSelected = false;
 
-// ⭐ 현재 남은 시간을 저장할 전역 변수 (360초 = 6분)
+// Global timer variable (360 seconds = 6 minutes)
 let timerInterval = null;
 let currentSec = 360; 
 
-// 버튼 토글
+// Button Toggle Functions
 function toggleEgg() {
     eggSelected = !eggSelected;
     document.getElementById("btn_egg").classList.toggle("selected", eggSelected);
@@ -19,37 +19,43 @@ function toggleGreen() {
     document.getElementById("btn_green").classList.toggle("selected", greenSelected);
 }
 
-// STOP (일시 정지)
+// STOP (Emergency / Pause)
 function pressStop() {
     socket.emit("stop_signal", true);
-    console.log("🛑 STOP pressed");
+    console.log("STOP signal sent");
     
     pauseTimer(); 
-    document.getElementById("progress_text").innerHTML = "📡 상태 : 일시 정지됨";
+    document.getElementById("progress_text").innerHTML = "Status: Paused";
 }
 
-// 🔄 RECOVERY
+// RECOVERY (System Reset)
 function pressRecovery() {
     socket.emit("recovery_signal", true);
-    console.log("🔄 RECOVERY pressed - System Reset");
+    console.log("RECOVERY signal sent - System Reset");
     
     resetSystem();
-    document.getElementById("progress_text").innerHTML = "📡 상태 (0) : 초기 대기 중";
+    document.getElementById("progress_text").innerHTML = "Status (0): Waiting for Order";
 }
 
-// START (새로운 주문 시작)
+// START (Process New Order)
 function pressStart() {
     let mode = 0;
     if (eggSelected && greenSelected) mode = 3;
     else if (eggSelected) mode = 1;
     else if (greenSelected) mode = 2;
 
-    socket.emit("mode_select", {mode: mode});
-    socket.emit("start_signal", true);
+    if (mode === 0) {
+        alert("Please select at least one item.");
+        return;
+    }
 
-    startNewTimer(); // 타이머를 6분부터 새로 시작
+    socket.emit("start_signal", { mode: mode });
+    console.log(`START signal sent - Mode: ${mode}`);
 
-    // 선택 초기화
+    // Start timer from 6 minutes
+    startNewTimer();
+
+    // Reset selection UI
     eggSelected = false;
     greenSelected = false;
     document.getElementById("btn_egg").classList.remove("selected");
@@ -57,14 +63,15 @@ function pressStart() {
 }
 
 
-/* ---------------- 타이머 ---------------- */
-// 1. 타이머를 6분(360초)부터 새로 시작하는 함수
+/* ---------------- Timer Functions ---------------- */
+
+// 1. Reset and start timer from 6:00
 function startNewTimer() {
-    currentSec = 360; // 시간을 6분으로 리셋
+    currentSec = 360; 
     resumeTimer();
 }
 
-// 2. 현재 시간(currentSec)부터 타이머를 작동시키는 핵심 함수
+// 2. Core timer logic
 function resumeTimer() {
     clearInterval(timerInterval);
 
@@ -81,30 +88,22 @@ function resumeTimer() {
     }, 1000);
 }
 
-// 3. 타이머 작동만 중지하는 함수 (pause)
+// 3. Pause timer
 function pauseTimer() {
     clearInterval(timerInterval);
 }
 
-// 4. 시스템 완전 초기화 함수 (Recovery 버튼 전용)
+// 4. Complete system reset (For Recovery button)
 function resetSystem() {
     clearInterval(timerInterval);
     currentSec = 360;
     document.getElementById("timer").innerText = "06:00";
 }
 
-
-/* ----------- ROS 진행 상태 ----------- */
+/* ----------- ROS Progress Status ----------- */
 socket.on("progress_update", (data) => {
-    let msg = "";
-    switch (data.state) {
-        case 1: msg = "냄비 놓는 중.."; break;
-        case 2: msg = "물 따르는 중.."; break;
-        case 3: msg = "면 넣는 중.."; break;
-        case 4: msg = "소스 넣는 중.."; break;
-        default: msg = "알 수 없음";
-    }
-
-    document.getElementById("progress_text").innerHTML =
-        `📡 상태 (${data.state}) : ${msg}`;
+    // data example: { step: 1, text: "Robot 1 Undocking..." }
+    const statusText = `Status (${data.step}): ${data.text}`;
+    document.getElementById("progress_text").innerHTML = statusText;
+    console.log(`Progress Update: ${statusText}`);
 });
