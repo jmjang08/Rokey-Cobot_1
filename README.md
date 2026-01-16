@@ -6,14 +6,7 @@ This project combines a **ROS2 (Humble) robot motion package** with a **Flask + 
 
 ## 🎬 Demo Video
 [![Rokey Ramen Chef Demo](https://img.youtube.com/vi/iO4yzDgU3Jg/0.jpg)](https://www.youtube.com/watch?v=iO4yzDgU3Jg)
-
-* 🤖 **ROS2 package**: `ramen_chef`
-* Executes basic robot motions via `move_basic.py`.
-
-* 🌐 **Web UI**: `flask_recovery`
-* Provides an intuitive button-based control interface.
-* Publishes ROS topics to send commands and subscribes to robot state/progress topics for real-time display.
-
+> 💡 **Click the image above to watch the full demonstration video on YouTube.**
 ---
 
 ## ⚙️ Requirements
