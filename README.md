@@ -4,6 +4,9 @@
 
 This project combines a **ROS2 (Humble) robot motion package** with a **Flask + Socket.IO web-based recovery/control UI** to implement a ramen-cooking robot system.
 
+## 🎬 Demo Video
+[![Rokey Ramen Chef Demo](https://img.youtube.com/vi/iO4yzDgU3Jg/0.jpg)](https://www.youtube.com/watch?v=iO4yzDgU3Jg)
+
 * 🤖 **ROS2 package**: `ramen_chef`
 * Executes basic robot motions via `move_basic.py`.
 
